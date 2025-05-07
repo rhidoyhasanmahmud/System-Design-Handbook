@@ -1,8 +1,8 @@
 # 💼 Tech Interview Prep Vault
 
-Welcome to the **Tech Interview Prep Vault** — a curated and growing collection of common interview questions and solutions across multiple domains of software engineering.
+Welcome to my **personal tech interview preparation repository** - a curated collection of common interview questions and well-explained solutions across key software engineering topics.
 
-This repository is designed to help developers prepare efficiently for technical interviews by covering a wide range of essential topics, including coding, databases, system design, frameworks, programming languages, and design patterns.
+I've created this as part of my own learning journey and interview prep. If you find it helpful, feel free to explore, learn, and even contribute!
 
 ---
 
