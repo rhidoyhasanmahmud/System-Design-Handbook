@@ -145,4 +145,6 @@ Column: Age   → 30, 28
 | Write Speed     | Fast              | Slower              |
 | Read Efficiency | All columns       | Few columns         |
 
+---
+
 > _Prepared for self-learning purposes. Formatting supported by GPT._
