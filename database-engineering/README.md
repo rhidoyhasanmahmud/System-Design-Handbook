@@ -6,6 +6,7 @@
 - Why Use Databases?  
 - When to Use a Database?  
 - What is Row-Based & Column-Based Databases?
+- What is a Transaction?
 
 ---
 
