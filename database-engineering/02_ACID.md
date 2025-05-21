@@ -51,7 +51,7 @@ Transactions move through several states during their lifecycle:
 
 # ACID Properties
 
-1. Atomicity
+1. Atomicity - All or Nothing
 
 A transaction is all or nothing. Either every operation in the transaction succeeds, or none do. If any step fails, the entire transaction is rolled back.
 
@@ -77,7 +77,7 @@ Types:
 - Atomic operations inside a transaction
 - Partial operations don’t leave database in inconsistent state
 
-2. Consistency
+2. Consistency - Valid Data Only
 
 Every transaction takes the database from one valid state to another, respecting all rules (constraints, triggers, cascades).
 
@@ -90,9 +90,9 @@ UPDATE accounts SET balance = balance - 1000 WHERE id = 1;  -- If balance < 1000
 Types:
 - Data integrity rules (constraints, foreign keys, checks) ensure consistency
 
-3. Isolation
+3. Isolation - No Dirty Reads
 
-Concurrent transactions do not interfere with each other. Intermediate states of a transaction are invisible to others until committed.
+Each transaction is independent. It should not see partial results of another ongoing transaction.
 
 Two users updating the same account balance simultaneously won’t corrupt the data. One transaction will wait for the other to finish or proceed safely.
 
@@ -101,9 +101,107 @@ Two users updating the same account balance simultaneously won’t corrupt the d
 -- Transaction 2 updates balance to 900
 -- Transaction 1 reads again, must see either 1000 or 900, not partial updates
 ```
-Types (Isolation Levels):
 
-> Phantom Read: When you check something in the database twice during a transaction, and new rows appear or disappear in the second check because someone else added or deleted them.
+Isolation Levels: 
 
+| Level              | Description                             | Side Effect           |
+|--------------------|-----------------------------------------|------------------------|
+| **Read Uncommitted** | Can read uncommitted data               | Dirty Read ✅          |
+| **Read Committed**   | Reads only committed data               | Dirty Read ❌          |
+| **Repeatable Read**  | Same query gives same result in one txn | Phantom Read ✅        |
+| **Serializable**     | Fully isolated (like running one-by-one) | Best Isolation ✅     |
 
+- Dirty Read: Reading data that hasn’t been committed yet. It may later be rolled back.
+- Non-Repeatable Read: You run the same query twice in one transaction and get different results because someone else modified the data.
+- Phantom Read: You run a query like ``` SELECT * FROM orders WHERE total > 1000```, and a new order gets inserted by another transaction. Now if you run the query again, you get a different result — new rows have “appeared like ghosts.”
 
+4. Durability - It Stays Forever
+
+Once a transaction is committed, it is permanently saved, even if the system crashes.
+
+You transfer money at 1:00 PM
+- Power cut at 1:01 PM
+- When server restarts — the transaction is still there!
+
+Databases use:
+
+- Write-Ahead Logs (WAL) – to ensure durability
+- Checkpointing
+
+## Summary
+
+| Property   | What it Ensures                     | Real-Life Analogy                             |
+|------------|-------------------------------------|------------------------------------------------|
+| Atomicity  | All steps done or none              | Sending parcel – either delivered or returned  |
+| Consistency| Valid data only                     | No student has -5 age                          |
+| Isolation  | No interference between transactions| One person at ATM at a time                    |
+| Durability | Data is permanent after commit      | Receipt remains even after power failure       |
+
+--- 
+
+#  Immediate Consistency (Strong Consistency)
+
+As soon as you write data, all subsequent reads reflect that change instantly — from any node or client.
+
+You update your profile picture on Facebook, and everyone sees the new photo right away — no one sees the old one.
+
+```text
+Write: name = 'Hasan' to Node A
+Immediately Read from Node B → returns 'Hasan'
+```
+
+Guarantees:
+- Always the latest data
+
+Downsides
+- Slower writes (wait for sync across nodes)
+- Harder to scale
+
+###  Where It’s Used:
+- Traditional RDBMS like PostgreSQL, MySQL (single-node)
+- Distributed systems with strong consistency mode (e.g., Google Spanner)
+---
+
+# Eventual Consistency
+
+After a write, data may not be immediately visible everywhere. But given time, all nodes will eventually sync and reflect the latest state.
+
+You post a tweet. Some friends see it instantly, others see it after a few seconds. Eventually, everyone sees it.
+
+```text
+Write: name = 'Hasan' to Node A
+Immediately Read from Node B → might return old value
+Later Read → returns 'Hasan'
+```
+
+Pros:
+- Fast write performance
+- High availability
+
+Cons:
+- You may get stale (old) data temporarily
+
+Where It’s Used:
+- Amazon DynamoDB (default)
+- Apache Cassandra
+- MongoDB (default for some setups)
+
+## Immediate vs Eventual Consistency
+
+| Feature            | Immediate Consistency         | Eventual Consistency              |
+|-------------------|-------------------------------|----------------------------------|
+| **Read Accuracy** | Always latest                 | May be outdated                   |
+| **Speed (Write)** | Slower                        | Faster                            |
+| **Use Case**      | Banking, finance              | Social media, analytics           |
+| **Example Systems** | SQL, Google Spanner          | DynamoDB, Cassandra, MongoDB      |
+| **Availability**  | May reduce availability       | Highly available                  |
+| **Complexity**    | Higher                        | Lower                             |
+
+## Real-World Comparison: Immediate vs Eventual Consistency
+
+| Application Type        | Recommended Consistency                    |
+|-------------------------|--------------------------------------------|
+| Bank transactions     | Immediate (you want accurate balance)       |
+| Social media likes    | Eventual (okay if counts are briefly off)   |
+| Shopping cart updates | Immediate (critical to avoid mismatch)      |
+| Analytics dashboard   | Eventual (data can be a few seconds late)   |
