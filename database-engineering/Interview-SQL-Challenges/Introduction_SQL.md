@@ -21,8 +21,8 @@ We utilize SQL queries to access a collection of records that are stored in our 
 
 ` Preview - 01 `
 
-<img src="Interview-SQL-Challenges/Images/1668954335595.jfif" alt="drawing" style="width:300px;"/>
+<img src="Images/1668954335595.jfif" alt="drawing" style="width:300px;"/>
 
 ` Preview - 02 `
 
-<img src="Interview-SQL-Challenges/Images/𝗦𝗤𝗟%20𝗾𝘂𝗲𝗿𝗶𝗲𝘀%20𝗿𝘂𝗻%20𝗶𝗻%20𝘁𝗵𝗶𝘀%20𝗼𝗿𝗱𝗲𝗿.jfif" alt="drawing" style="width:300px;"/>
+<img src="Images/𝗦𝗤𝗟%20𝗾𝘂𝗲𝗿𝗶𝗲𝘀%20𝗿𝘂𝗻%20𝗶𝗻%20𝘁𝗵𝗶𝘀%20𝗼𝗿𝗱𝗲𝗿.jfif" alt="drawing" style="width:300px;"/>
