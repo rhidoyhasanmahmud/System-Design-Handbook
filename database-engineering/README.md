@@ -10,7 +10,9 @@
 - Why Use Transactions?
 - ACID
 - Immediate Consistency (Strong Consistency) & Eventual Consistency
-
+- How Tables and Indexes Are Stored on Disk?
+- Primary Key & Secondary (or Alternate/Secondary Index) Key
+- Database Pages
 ---
 
 > _Prepared for self-learning purposes. Formatting supported by GPT._
