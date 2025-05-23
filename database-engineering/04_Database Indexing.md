@@ -840,5 +840,349 @@ quickly reject known spam before doing expensive checks.
 
 > WIP 
 
+---
 
+# Working with Billion Row Table
+
+Working with billion-row tables requires a shift in mindset from traditional database use. You need to design for scale,
+speed, and safety from the ground up.
+
+**CHALLENGES**
+
+* Slow queries
+* Locking during writes
+* Index maintenance overhead
+* Table bloat and storage cost
+* Full table scans killing performance
+
+**STRATEGIES TO HANDLE BILLION-ROW TABLES**
+
+1. Partitioning (Divide & Conquer)
+
+Split the table by:
+
+* RANGE (e.g., by date)
+* LIST (e.g., by region)
+* HASH (e.g., by user ID)
+
+PostgreSQL Example:
+
+```sql
+CREATE TABLE logs
+(
+  id       BIGINT,
+  log_time TIMESTAMP
+) PARTITION BY RANGE (log_time);
+
+CREATE TABLE logs_2024 PARTITION OF logs
+  FOR VALUES FROM
+(
+  '2024-01-01'
+) TO
+(
+  '2025-01-01'
+);
+```
+
+💡 Queries that filter on log_time can scan just one partition, not the whole table.
+
+2. Proper Indexing
+
+* Use composite indexes on frequently filtered/sorted columns.
+* Use partial indexes for filtered cases.
+* Avoid indexing low-cardinality columns (e.g., gender, status).
+
+```sql
+-- Partial index (PostgreSQL)
+CREATE INDEX CONCURRENTLY idx_active_users ON users(last_login) WHERE status = 'active';
+```
+
+3. Batch Processing for Writes
+
+Large updates/deletes? Break them into chunks.
+
+```sql
+DELETE
+FROM logs
+WHERE created_at < NOW() - INTERVAL '90 days' LIMIT 10000;
+```
+
+Loop this to avoid locking the table or exhausting resources.
+
+4. Parallel Queries
+
+Enable parallel workers (PostgreSQL, MySQL 8+):
+
+```sql
+SET
+max_parallel_workers_per_gather = 4;
+```
+
+Query planner will use multiple CPU cores.
+
+5. Materialized Views & Rollups
+
+Avoid scanning all billion rows for each report. Pre-aggregate!
+
+```sql
+CREATE
+MATERIALIZED VIEW daily_signups AS
+SELECT date (created_at), COUNT (*)
+FROM users
+GROUP BY 1;
+```
+
+Refresh daily or hourly.
+
+6. Use EXPLAIN ANALYZE for Every Critical Query
+
+See how much time each query takes, which indexes are used, and what needs fixing:
+
+```sql
+EXPLAIN
+ANALYZE
+SELECT COUNT(*)
+FROM logs
+WHERE log_time > NOW() - INTERVAL '1 day';
+```
+
+7. Avoid SELECT * and Large Joins
+
+* Always select only needed columns.
+* Push filters down as early as possible in subqueries.
+* Avoid unnecessary JOINs with large tables.
+
+8. Regular Maintenance
+
+* PostgreSQL: VACUUM, ANALYZE, REINDEX
+* Monitor pg_stat_user_tables for dead tuples
+* Archive or drop old partitions if not needed
+
+9. Use Compression (Storage & IO Efficiency)
+
+* PostgreSQL: TOAST, column compression, TimescaleDB compression
+* Columnar DBs: ClickHouse, Redshift, Apache Parquet
+
+10. Use Specialized Engines if Needed
+
+| Tool                     | Best For                     |
+|--------------------------|------------------------------|
+| PostgreSQL + TimescaleDB | time-series billions of rows |
+| ClickHouse               | ultra-fast analytics         |
+| Apache Druid             | real-time dashboards         |
+| BigQuery / Redshift      | cloud-scale analytics        |
+
+11. Optional: Simulated Workload Tools
+
+* pgbench – PostgreSQL benchmark tool
+* tsbs – Time-series Benchmark Suite
+* Load test with INSERT, SELECT, and DELETE batches
+
+---
+
+# How UUIDs in B+ Tree Indexes effect performance?
+
+Using UUIDs as keys in B+ Tree indexes can negatively impact performance in several ways.
+
+1. Non-sequential inserts
+
+* UUIDs are random (not ordered).
+* B+ Trees work best when keys are increasing (like auto-increment IDs).
+
+👉 Inserting random UUIDs causes page splits, fragmentation, and poor cache usage.
+
+2. Worse write performance
+
+Each insert may go to a random location in the B+ Tree, triggering:
+
+* Page splits
+* Disk writes
+* CPU cache misses
+
+This gets worse as the table grows.
+
+3. Slower index scans
+
+* B+ Trees are designed for range queries and ordered traversal.
+* UUIDs break this benefit since they are not naturally ordered.
+
+**Example: Insert & Query Comparison**
+
+```sql
+-- Table using UUIDs
+CREATE TABLE users_uuid
+(
+  id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT
+);
+
+-- Table using serial
+CREATE TABLE users_serial
+(
+  id   SERIAL PRIMARY KEY,
+  name TEXT
+);
+```
+
+**Insert Performance:**
+
+```sql
+-- Insert 1 million rows
+INSERT INTO users_uuid (name)
+SELECT 'User ' || i
+FROM generate_series(1, 1000000) AS i;
+
+INSERT INTO users_serial (name)
+SELECT 'User ' || i
+FROM generate_series(1, 1000000) AS i;
+```
+
+🧪 Observation: users_uuid takes significantly longer to insert — due to B+ Tree churn.
+
+Index Scan Performance:
+
+```sql
+-- Range scan (serial table is fast)
+SELECT *
+FROM users_serial
+WHERE id BETWEEN 500000 AND 500010;
+
+-- Range scan on UUID is nearly useless
+SELECT *
+FROM users_uuid
+ORDER BY id LIMIT 10;
+```
+
+🧪 Observation: UUID table can’t optimize range scan — random order kills performance.
+
+Alternatives & Fixes
+
+1. Use uuid_generate_v1() or uuid_generate_v7()
+   These UUID versions are timestamp-based → nearly sequential.
+
+```sql
+CREATE TABLE users_v1
+(
+  id   UUID PRIMARY KEY DEFAULT uuid_generate_v1(),
+  name TEXT
+);
+```
+
+🟢 Much better insert performance than random UUIDv4.
+
+2. Use BIGINT or BIGSERIAL: Best for write-heavy workloads and natural ordering.
+3. Use pgcrypto with sorting prefix
+
+Hybrid approach:
+
+```sql
+CREATE TABLE users
+(
+  id UUID PRIMARY KEY DEFAULT (
+    lpad(to_hex(floor(EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::bigint), 12, '0') ||
+    encode(gen_random_bytes(10), 'hex')
+    )::uuid
+);
+```
+
+→ Generates UUIDs with a sortable prefix.
+
+## Summary Table
+
+| ID Type              | Insert Speed | Index Scan | Range Queries | Best Use Case             |
+|----------------------|--------------|------------|---------------|---------------------------|
+| UUIDv4 (random)      | 🔴 Slow      | 🔴 Poor    | 🔴 Bad        | Replication-safe PKs      |
+| UUIDv1/v7 (ordered)  | 🟡 Medium    | 🟡 Decent  | 🟡 Ok         | Safe + partially ordered  |
+| BIGINT/SERIAL        | 🟢 Fast      | 🟢 Best    | 🟢 Excellent  | Analytics, high insert DB |
+| Hybrid UUID (prefix) | 🟢 Fast      | 🟢 Good    | 🟢 Good       | App-layer ordered UUIDs   |
+
+---
+
+# The cost of Long running Transaction?
+
+The cost of a long-running transaction can be significant — it may silently degrade the performance, reliability, and
+maintainability of your entire database.
+
+1. Prevents VACUUM Cleanup (PostgreSQL)
+
+In MVCC databases like PostgreSQL:
+
+* Deleted/updated rows are not immediately removed. 
+* VACUUM can only clean them after the transaction ends.
+
+Effect:
+
+* Dead tuples accumulate → table bloat
+* Slower reads and writes
+* Autovacuum gets blocked → background cleanup fails
+
+```sql
+BEGIN;
+-- Long transaction running...
+
+-- Meanwhile: DELETE 10 million rows in another session
+-- VACUUM can’t reclaim space until this first transaction finishes!
+```
+2. Increases Row Version Retention
+
+* Other transactions must keep old versions of rows "just in case" your long transaction needs them.
+
+* That increases:
+
+  * Memory/Temp file usage
+  * Disk I/O
+  * Snapshot size
+
+3. Locks and Blocking
+
+Long transactions can hold locks on rows/tables → causes:
+
+* Blocked INSERT/UPDATE/DELETE
+* Lock wait timeouts
+* Deadlocks
+
+```sql
+BEGIN;
+UPDATE users SET status = 'inactive' WHERE id = 42;
+
+-- Another session tries to update the same row → blocked!
+```
+
+4. WAL Growth (PostgreSQL), Binlog (MySQL)
+
+* The longer a transaction is open, the more Write-Ahead Log (WAL) or binary log data must be retained.
+
+* Causes:
+
+  * WAL file bloat
+  * Disk usage spikes
+  * Delays in replication
+
+5. Replication Lag
+
+If your replica reads from WAL/Binlog and a transaction isn't committed:
+
+* Replica can't apply those changes
+* You get replication lag
+* Read replicas return stale data
+
+6. Performance Impact
+
+Query planner avoids using certain optimizations (like index-only scans) if visibility is uncertain due to an open transaction.
+
+7. Risk of Rollback
+
+* Longer transaction = higher chance of conflict
+* If any error happens → entire thing rolls back
+* Wasted work, higher system load
+
+**Best Practices**
+
+| Practice                                   | Why It Helps                                   |
+|--------------------------------------------|------------------------------------------------|
+| Keep transactions short                    | Frees up locks and vacuum space                |
+| Use batching                               | Avoids large monolithic transactions           |
+| Monitor `pg_stat_activity` or `INNODB_TRX` | Detect long-running queries                    |
+| Set `idle_in_transaction_timeout`          | Auto-kills forgotten idle transactions         |
+| Log transactions > X seconds               | Alert on problematic usage                     |
 
