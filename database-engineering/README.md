@@ -30,7 +30,8 @@
   - Working with Billion Row Table
   - How UUIDs in B+ Tree Indexes effect performance?
   - The cost of Long running Transaction?
-
+- B- Tree & B+ Tree in Production Database Systems
+  - B- Tree vs B+ Tree
 ---
 
 > _Prepared for self-learning purposes. Formatting supported by GPT._
