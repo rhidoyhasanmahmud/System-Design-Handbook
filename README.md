@@ -15,28 +15,11 @@ Welcome to my personal **System Design Preparation** repository. This is a curat
 
 ## 🏗️ Topics Covered
 
-- Fundamentals of System Design
-- Load Balancing & Caching
-- Database Design & Sharding
-- Scalability & Availability
-- Consistency & CAP Theorem
-- Microservices vs Monolith
-- Event-Driven Architecture
-- Messaging Queues (Kafka, RabbitMQ)
-- API Gateway & Rate Limiting
-- CDN, Proxy & DNS
-- Cloud, CI/CD & Monitoring
+- Database Engineering
+- Fundamentals-of-Backend-Engineering
+- Coding Problems
 > More to come...
 
----
-## 📆 Weekly Learning Log
-
-| Week | Topics Covered                     | Status   |
-|------|------------------------------------|----------|
-| 1    | Fundamentals + Load Balancing      | ✅ Done  |
-| 2    | Caching + CDN                      | ✅ Done  |
-| 3    | Database Scaling + Sharding        | 🚧 Ongoing |
-| 4    | Message Queues + Async Systems     | ⏳ Planned |
 ---
 
 ## 🤝 Contributing
