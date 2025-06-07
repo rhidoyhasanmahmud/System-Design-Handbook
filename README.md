@@ -1,37 +1,42 @@
-# 💼 Tech Interview Prep Vault
+# 🧠 System Design Preparation by Hasan Mahmud Rhidoy
 
-Welcome to my **personal tech interview preparation repository** - a curated collection of common interview questions and well-explained solutions across key software engineering topics.
-
-I've created this as part of my own learning journey and interview prep. If you find it helpful, feel free to explore, learn, and even contribute!
+Welcome to my personal **System Design Preparation** repository. This is a curated, structured, and hands-on resource that I am building to strengthen my system design skills — from fundamentals to advanced architectures.
 
 ---
 
-## 🚀 What's Inside?
+## 📌 Objectives
 
-### 1. 👨‍💻 **Coding Interview Questions**
-
-### 2. 🗄️ **Database Interview Questions**
-
-### 3. 🏗️ **System Design**
-
-### 4. 🧩 **Design Patterns**
-
-### 5. ⚙️ **Framework-Based Questions**
-
-### 6. 🔤 **Language-Specific Questions**
-
-### 7. Coming Soon
+- ✅ Understand core system design principles
+- ✅ Explore real-world scalable architectures
+- ✅ Practice design interviews with case studies
+- ✅ Document my learning journey
 
 ---
 
-## 📁 Project Structure
+## 🏗️ Topics Covered
 
-/coding-problems/
-- [Beginner]_Common_String_Problems.md
+- Fundamentals of System Design
+- Load Balancing & Caching
+- Database Design & Sharding
+- Scalability & Availability
+- Consistency & CAP Theorem
+- Microservices vs Monolith
+- Event-Driven Architecture
+- Messaging Queues (Kafka, RabbitMQ)
+- API Gateway & Rate Limiting
+- CDN, Proxy & DNS
+- Cloud, CI/CD & Monitoring
+> More to come...
 
-/system-design/
-- design-url-shortener.md
+---
+## 📆 Weekly Learning Log
 
+| Week | Topics Covered                     | Status   |
+|------|------------------------------------|----------|
+| 1    | Fundamentals + Load Balancing      | ✅ Done  |
+| 2    | Caching + CDN                      | ✅ Done  |
+| 3    | Database Scaling + Sharding        | 🚧 Ongoing |
+| 4    | Message Queues + Async Systems     | ⏳ Planned |
 ---
 
 ## 🤝 Contributing
