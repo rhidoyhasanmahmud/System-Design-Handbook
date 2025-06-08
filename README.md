@@ -1,4 +1,4 @@
-# 🧠 System Design Preparation by Hasan Mahmud Rhidoy
+# 🧠 System Design Preparation ~ Self
 
 Welcome to my personal **System Design Preparation** repository. This is a curated, structured, and hands-on resource that I am building to strengthen my system design skills — from fundamentals to advanced architectures.
 
